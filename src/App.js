@@ -1,54 +1,41 @@
-import { useReducer } from 'react';
-import './App.css';
+import { useDebugValue, useEffect, useState } from 'react';
 
-const globalState = {
-  title: 'O título que contexto',
-  body: 'O body do contexto',
-  counter: 0,
+const useMediaQuery = (queryValue, initialValue = false) => {
+  const [match, setMatch] = useState(initialValue);
+
+  useDebugValue(`Query: ${queryValue}`, (name) => {
+    return name + ' modificado';
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const matchMedia = window.matchMedia(queryValue);
+
+    const handleChange = () => {
+      if (!isMounted) return;
+      setMatch(Boolean(matchMedia.matches));
+    };
+
+    matchMedia.addEventListener('change', handleChange);
+    setMatch(!!matchMedia.matches);
+
+    return () => {
+      isMounted = false;
+      matchMedia.removeEventListener('change', handleChange);
+    };
+  }, [queryValue]);
+
+  return match;
 };
 
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'muda': {
-      console.log('Chamou muda com', action.payload);
-      return { ...state, title: action.payload };
-    }
-    case 'inverter': {
-      console.log('Chamou inverter');
-      const { title } = state;
-      return { ...state, title: title.split('').reverse().join('') };
-    }
-  }
+export const App = () => {
+  const huge = useMediaQuery('(min-width: 980px)');
+  const big = useMediaQuery('(max-width: 979px) and (min-width: 768px)');
+  const medium = useMediaQuery('(max-width: 767px) and (min-width: 321px)');
+  const small = useMediaQuery('(max-width: 321px)');
 
-  console.log('NENHUMA ACTION ENCONTRADA...');
-  return { ...state };
+  const background = huge ? 'green' : big ? 'red' : medium ? 'yellow' : small ? 'purple' : null;
+
+  return <div style={{ fontSize: '60px', background }}>Oi</div>;
 };
-
-function App() {
-  const [state, dispatch] = useReducer(reducer, globalState);
-  const { counter, title, body } = state;
-
-  return (
-    <div>
-      <h1>
-        {title} {counter}
-      </h1>
-      <button
-        onClick={() =>
-          dispatch({
-            type: 'muda',
-            payload: new Date().toLocaleString('pt-BR'),
-          })
-        }
-      >
-        Click
-      </button>
-      <button onClick={() => dispatch({ type: 'inverter' })}>Invert</button>
-      <button onClick={() => dispatch({ type: 'QUALQUERCOiSA' })}>
-        SEM ACTION
-      </button>
-    </div>
-  );
-}
-
 export default App;
